@@ -162,35 +162,45 @@ def detect(opt):
                         id = output[4]
                         cls = output[5]
 
-                        #fps = 1./(time_sync().time_sync()-t1)
-                        #cv2.putText(img, "FPS: {:.2f}".format(fps),(0,30),0,1,(0,0,255), 2)
+                        #fps = 1./(time_sync()-t1)
+                        #cv2.putText(im0, "FPS: {:.2f}".format(fps),(0,30),0,1,(0,0,255), 2)
 
-                        center = (int(((output[0])+(output[2]))/2),int(((output[1])+(output[3]))/2))
+                        center = int(((output[0])+(output[2]))/2),int(((output[1])+(output[3]))/2)
+   
                         pts[id].append(center)
+                        if save_txt:
+                            with open(txt_path, 'a') as f:
+                              f.write(str(j) + " _ " + str(center) + "\n")
+                        #if len(pts) > 30:
                         for g in range(1,len(pts[id])):
                           if pts[id][g-1] is None or pts[id][g] is None:
                             continue
-                          thickness = int(np.sqrt(64/float(g+1))*2)
-                          cv2.line(im0,(pts[id][g-1]),(pts[id][g]),256,thickness)
-
-                        #annotator.draw_line(bboxes, label, color=colors(c, True))
-
+                          thickness = int(np.sqrt(16/float(g+1))*4)
+                          cv2.line(im0,(pts[id][g-1]),(pts[id][g]),127,thickness)
+                          
 
 
                         c = int(cls)  # integer class
                         label = f'{id} {names[c]} {conf:.2f}'
                         annotator.box_label(bboxes, label, color=colors(c, True))
 
-                        if save_txt:
-                            # to MOT format
-                            bbox_left = output[0]
-                            bbox_top = output[1]
-                            bbox_w = output[2] - output[0]
-                            bbox_h = output[3] - output[1]
-                            # Write MOT compliant results to file
-                            with open(txt_path, 'a') as f:
-                               f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, bbox_left,
-                                                           bbox_top, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+                        #if save_txt:
+                        #    # to MOT format
+                        #    bbox_left = output[0]
+                        #    bbox_top = output[1]
+                        #    bbox_w = output[2] - output[0]
+                        #    bbox_h = output[3] - output[1]
+                        #    # Write MOT compliant results to file
+                        #    with open(txt_path, 'a') as f:
+                        #       f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, bbox_left,
+                        #                                   bbox_top, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+                        
+
+
+
+
+
+
 
             else:
                 deepsort.increment_ages()
@@ -261,3 +271,4 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         detect(opt)
+
