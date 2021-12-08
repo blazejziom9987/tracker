@@ -171,8 +171,9 @@ def detect(opt):
                           if pts[id][g-1] is None or pts[id][g] is None:
                             continue
                           thickness = int(np.sqrt(64/float(g+1))*2)
-                          cv2.line(img,(pts[id][g-1]),(pts[id][g]),256,thickness)
-                        
+                          cv2.line(im0,(pts[id][g-1]),(pts[id][g]),256,thickness)
+
+                        #annotator.draw_line(bboxes, label, color=colors(c, True))
 
 
 
