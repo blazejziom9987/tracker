@@ -28,6 +28,7 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from collections import deque
+import numpy as np
 
 def detect(opt):
     out, source, yolo_weights, deep_sort_weights, show_vid, save_vid, save_txt, imgsz, evaluate, half = \
@@ -94,11 +95,14 @@ def detect(opt):
     txt_file_name = source.split('/')[-1].split('.')[0]
     txt_path = str(Path(out)) + '/' + txt_file_name + '.txt'
 
-    #pts = [deque(maxlen=30) for _ in range(1000)]
+    pts = [deque(maxlen=30) for _ in range(1000)]
 
     if pt and device.type != 'cpu':
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.model.parameters())))  # warmup
     dt, seen = [0.0, 0.0, 0.0], 0
+
+
+
     for frame_idx, (path, img, im0s, vid_cap, s) in enumerate(dataset):
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
@@ -157,19 +161,25 @@ def detect(opt):
                         bboxes = output[0:4]
                         id = output[4]
                         cls = output[5]
+
+                        #fps = 1./(time_sync().time_sync()-t1)
+                        #cv2.putText(img, "FPS: {:.2f}".format(fps),(0,30),0,1,(0,0,255), 2)
+
+                        center = (int(((output[0])+(output[2]))/2),int(((output[1])+(output[3]))/2))
+                        pts[id].append(center)
+                        for g in range(1,len(pts[id])):
+                          if pts[id][g-1] is None or pts[id][g] is None:
+                            continue
+                          thickness = int(np.sqrt(64/float(g+1))*2)
+                          cv2.line(img,(pts[id][g-1]),(pts[id][g]),256,thickness)
                         
-                        #center = (int(((output[0])+(output[2]))/2),int(((output[1])+(output[3]))/2))
-                        #pts[track].append(center)
-                        #for j in range(1,len(pts[track])):
-                        #  if pts[track][j-1] is None or pts[track][j] is None:
-                        #    continue
-                        #  thickness = int(np.sqrt(64/float(j+1))*2)
-                        #  cv2.line(img,(pts[track][j-1]),(pts[track][j]),256,thickness)
-                        #
+
+
+
                         c = int(cls)  # integer class
                         label = f'{id} {names[c]} {conf:.2f}'
-                        #annotator.box_label(bboxes, label, color=colors(c, True))
-                        annotator.box_label(bboxes, label, (125,125,125)))
+                        annotator.box_label(bboxes, label, color=colors(c, True))
+
                         if save_txt:
                             # to MOT format
                             bbox_left = output[0]
@@ -222,7 +232,7 @@ def detect(opt):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo_weights', nargs='+', type=str, default='yolov5l.pt', help='model.pt path(s)')
+    parser.add_argument('--yolo_weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt path(s)')
     parser.add_argument('--deep_sort_weights', type=str, default='deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7', help='ckpt.t7 path')
     # file/folder, 0 for webcam
     parser.add_argument('--source', type=str, default='0', help='source')
